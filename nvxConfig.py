@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ElemTree
     
 pos, nvxType, name, dev, ip, mac, mAddr, rows = ([] for i in range(8))
 
-if len(sys.argv) != 3:
+if len(sys.argv) < 3:
     sys.exit('invalid number of args: 2 required and only {} given'.format(len(sys.argv)))
 
 if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
@@ -43,7 +43,8 @@ if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
 elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
     
     subElems = [pos, nvxType, name, dev, ip, mac, mAddr]
-    csvFileName, xmlFileName = sys.argv[1], sys.argv[2]
+    csvFileName, xmlFileName, xioDirIP = sys.argv[1], sys.argv[2], sys.argv[3]
+    domainName = sys.argv[4]
     with open(csvFileName, 'r') as fileHandle:
         reader = csv.reader(fileHandle, delimiter=',')
         for row in reader:
@@ -56,10 +57,14 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
     attributes = rows[0]
     del rows[0]
 
-    header = '<xio><switch snmpCommunity="public" snmpVersion="v2c" address="172.22.63.84"/><domain name="DOMAIN1"/>' 
     deviceRoot = ElemTree.Element('xio')
-    comment = ElemTree.Comment('?xml version="1.0" encoding="UTF-8"?')
-    deviceRoot.insert(0, comment)
+    switchInfo = ElemTree.SubElement(deviceRoot, 'switch')
+    switchInfo.set('snmpCommunity', 'public')
+    switchInfo.set('snmpVersion', 'v2c')
+    switchInfo.set('address', xioDirIP)
+    domainInfo = ElemTree.SubElement(deviceRoot, 'domain')
+    domainInfo.set('name', domainName)
+
     devices = ElemTree.SubElement(deviceRoot, 'devices')
     numOfDevs = len(subElems[0])
     node = [[] for i in range(numOfDevs)]
@@ -76,7 +81,7 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
         node[i].set(attributes[6], rows[i][6])
 
     with open(xmlFileName, 'w') as xmlFileHandle:
-        dataToWrite = ElemTree.tostring(deviceRoot)
+        dataToWrite = ElemTree.tostring(deviceRoot, encoding='utf8', method='xml')
         dataToWrite = dataToWrite.decode()
         xmlFileHandle.write(dataToWrite)
 else:
