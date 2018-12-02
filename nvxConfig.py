@@ -1,18 +1,21 @@
 #!/usr/bin/python
-import os, sys, csv
+import os, sys, csv, itertools
 from xml.dom import minidom
+import xml.etree.ElementTree as ElemTree
+    
+pos, nvxType, name, dev, ip, mac, mAddr, rows = ([] for i in range(8))
 
 if len(sys.argv) != 3:
     sys.exit('invalid number of args: 2 required and only {} given'.format(len(sys.argv)))
 
 if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
-    fileName = sys.argv[1]
+    
+    csvFileName, xmlFileName = sys.argv[2], sys.argv[1]
     path = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(path, fileName)
+    path = os.path.join(path, xmlFileName)
     print(path)
-    pos, nvxType, name, dev, ip, mac, mAddr, rows = ([] for i in range(8))
 
-    doc = minidom.parse(fileName)
+    doc = minidom.parse(xmlFileName)
     devs = doc.getElementsByTagName('device')
     for i, nvx in enumerate(devs):
         pos.append(nvx.attributes['position'].value)
@@ -25,14 +28,57 @@ if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
         rows.append([pos[i], nvxType[i], name[i], dev[i], ip[i], mac[i], mAddr[i]])
 
     fieldNames = ['position', 'type', 'Name', 'Device', 'IP', 'MAC', 'MAddr']
-    with open(sys.argv[2], 'w') as fh:
-        writer = csv.DictWriter(fh, fieldnames=fieldNames, delimiter=',')
-        writer.writeheader()
-        writer = csv.writer(fh, delimiter=',')
-        for row in rows:
-            writer.writerow(row)
+    try:
+        with open(csvFileName, 'w') as fileHandle:
+            writer = csv.DictWriter(fileHandle, fieldnames=fieldNames, delimiter=',')
+            writer.writeheader()
+            writer = csv.writer(fileHandle, delimiter=',')
+            for row in rows:
+                writer.writerow(row)
+    except IOError as e:
+        print('Error writing to file: {}'.format(e.args))
+    except Exception as e:
+        print('Error occured: {}'.format(e.args))
+
 elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
-    pass
+    
+    subElems = [pos, nvxType, name, dev, ip, mac, mAddr]
+    csvFileName, xmlFileName = sys.argv[1], sys.argv[2]
+    with open(csvFileName, 'r') as fileHandle:
+        reader = csv.reader(fileHandle, delimiter=',')
+        for row in reader:
+            rows.append(row)
+            for i in range(len(row)):
+                subElems[i].append(row[i])
+
+    for i in range(len(subElems)):
+        del subElems[i][0]
+    attributes = rows[0]
+    del rows[0]
+
+    header = '<xio><switch snmpCommunity="public" snmpVersion="v2c" address="172.22.63.84"/><domain name="DOMAIN1"/>' 
+    deviceRoot = ElemTree.Element('xio')
+    comment = ElemTree.Comment('?xml version="1.0" encoding="UTF-8"?')
+    deviceRoot.insert(0, comment)
+    devices = ElemTree.SubElement(deviceRoot, 'devices')
+    numOfDevs = len(subElems[0])
+    node = [[] for i in range(numOfDevs)]
+
+    for i in range(numOfDevs):
+        node[i] = ElemTree.SubElement(devices, 'device')    
+    for i in range(len(rows)):
+        node[i].set(attributes[0], rows[i][0])
+        node[i].set(attributes[1], rows[i][1])
+        node[i].set(attributes[2], rows[i][2])
+        node[i].set(attributes[3], rows[i][3])
+        node[i].set(attributes[4], rows[i][4])
+        node[i].set(attributes[5], rows[i][5])
+        node[i].set(attributes[6], rows[i][6])
+
+    with open(xmlFileName, 'w') as xmlFileHandle:
+        dataToWrite = ElemTree.tostring(deviceRoot)
+        dataToWrite = dataToWrite.decode()
+        xmlFileHandle.write(dataToWrite)
 else:
     sys.exit('invalid file extensions given')
 
