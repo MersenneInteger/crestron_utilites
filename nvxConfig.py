@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import os, sys, csv, itertools
+import os, sys, csv
 from xml.dom import minidom
 import xml.etree.ElementTree as ElemTree
     
@@ -45,12 +45,17 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
     subElems = [pos, nvxType, name, dev, ip, mac, mAddr]
     csvFileName, xmlFileName, xioDirIP = sys.argv[1], sys.argv[2], sys.argv[3]
     domainName = sys.argv[4]
-    with open(csvFileName, 'r') as fileHandle:
-        reader = csv.reader(fileHandle, delimiter=',')
-        for row in reader:
-            rows.append(row)
-            for i in range(len(row)):
-                subElems[i].append(row[i])
+    try:
+        with open(csvFileName, 'r') as fileHandle:
+            reader = csv.reader(fileHandle, delimiter=',')
+            for row in reader:
+                rows.append(row)
+                for i in range(len(row)):
+                    subElems[i].append(row[i])
+    except IOError as e:
+        print('Error reading from file: {}'.format(e.args))
+    except Exception as e:
+        print('Error occured: {}'.format(e.args))
 
     for i in range(len(subElems)):
         del subElems[i][0]
@@ -80,10 +85,13 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
         node[i].set(attributes[5], rows[i][5])
         node[i].set(attributes[6], rows[i][6])
 
-    with open(xmlFileName, 'w') as xmlFileHandle:
-        dataToWrite = ElemTree.tostring(deviceRoot, encoding='utf8', method='xml')
-        dataToWrite = dataToWrite.decode()
-        xmlFileHandle.write(dataToWrite)
+    try:
+        with open(xmlFileName, 'w') as xmlFileHandle:
+            dataToWrite = ElemTree.tostring(deviceRoot, encoding='utf8', method='xml')
+            dataToWrite = dataToWrite.decode()
+            xmlFileHandle.write(dataToWrite)
+    except Exception as e:
+        print('Error occured: {}'.format(e.args))
 else:
     sys.exit('invalid file extensions given')
 
