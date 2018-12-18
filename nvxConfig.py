@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ElemTree
 pos, nvxType, name, dev, ip, mac, mAddr, rows = ([] for i in range(8))
 
 if len(sys.argv) < 3:
+    #xml->csv needs both filenames, csv->xml needs both filenames, ip and domain name of the Xio-Dir
     sys.exit('invalid number of args: 2 required and only {} given'.format(len(sys.argv)))
 
 if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
@@ -15,7 +16,9 @@ if '.xml' in sys.argv[1] and '.csv' in sys.argv[2]:
     path = os.path.join(path, xmlFileName)
     print(path)
 
+    #get dom
     doc = minidom.parse(xmlFileName)
+    #parse dom and store elements in devs
     devs = doc.getElementsByTagName('device')
     for i, nvx in enumerate(devs):
         pos.append(nvx.attributes['position'].value)
@@ -47,6 +50,7 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
     domainName = sys.argv[4]
     try:
         with open(csvFileName, 'r') as fileHandle:
+            #read csv and store rows
             reader = csv.reader(fileHandle, delimiter=',')
             for row in reader:
                 rows.append(row)
@@ -57,11 +61,13 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
     except Exception as e:
         print('Error occured: {}'.format(e.args))
 
+    #remove headers from rows and subElems
     for i in range(len(subElems)):
         del subElems[i][0]
     attributes = rows[0]
     del rows[0]
 
+    #build xml file
     deviceRoot = ElemTree.Element('xio')
     switchInfo = ElemTree.SubElement(deviceRoot, 'switch')
     switchInfo.set('snmpCommunity', 'public')
@@ -72,11 +78,13 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
 
     devices = ElemTree.SubElement(deviceRoot, 'devices')
     numOfDevs = len(subElems[0])
+    #create list of lists to store attributes of each nvx
     node = [[] for i in range(numOfDevs)]
 
     for i in range(numOfDevs):
         node[i] = ElemTree.SubElement(devices, 'device')    
     for i in range(len(rows)):
+        #populate nodes with attributes of each nvx
         node[i].set(attributes[0], rows[i][0])
         node[i].set(attributes[1], rows[i][1])
         node[i].set(attributes[2], rows[i][2])
@@ -87,6 +95,7 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
 
     try:
         with open(xmlFileName, 'w') as xmlFileHandle:
+            #write xml endpoint map
             dataToWrite = ElemTree.tostring(deviceRoot, encoding='utf8', method='xml')
             dataToWrite = dataToWrite.decode()
             xmlFileHandle.write(dataToWrite)
@@ -94,4 +103,3 @@ elif '.csv' in sys.argv[1] and '.xml' in sys.argv[2]:
         print('Error occured: {}'.format(e.args))
 else:
     sys.exit('invalid file extensions given')
-
