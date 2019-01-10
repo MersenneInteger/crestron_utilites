@@ -25,6 +25,7 @@ def snipLastOctect(ip):
 
 if len(sys.argv) > 1 and len(sys.argv) < 4:
         
+    start, stop = sys.argv[1], sys.argv[2]
     validateIP(start)
     validateIP(stop)
     start_host_bit, start = snipLastOctect(start)
@@ -56,6 +57,8 @@ def main():
                         stderr = subprocess.PIPE)
                 host_alive, err = ping.communicate()
                 host_alive = host_alive.decode()
+
+                print(ping.stdout, ping.stderr)
 
                 if 'Host Unreachable' in host_alive:
                     print(f'{new_ip}-Host unreachable')
