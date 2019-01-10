@@ -24,11 +24,6 @@ def snipLastOctect(ip):
     return fourth_octect, ip_str
 
 if len(sys.argv) > 1 and len(sys.argv) < 4:
-
-    if os.name == 'nt':
-        start, stop = sys.argv[1], sys.argv[2]
-    else:
-        start, stop = sys.argv[1], sys.argv[2]
         
     validateIP(start)
     validateIP(stop)
