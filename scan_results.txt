@@ -1,0 +1,18 @@
+192.168.1.114-Host unreachable
+192.168.1.115-Host unreachable
+192.168.1.116-Host unreachable
+192.168.1.117-Host unreachable
+192.168.1.118-Host alive
+	21 open
+	22 open
+	23 open
+	24 closed
+	80 open
+	8080 closed
+	443 open
+	41794 open
+	41795 open
+192.168.1.119-Host unreachable
+192.168.1.120-Host unreachable
+192.168.1.121-Host unreachable
+192.168.1.122-Host unreachable
