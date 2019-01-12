@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
-import socket, subprocess, sys, os
+import socket
+import subprocess
+import sys
+import os
+import datetime
 
-def validateIP(ip):
+def validate_ip(ip):
 
     #split into 4 octets
     ip_list = ip.split('.')
@@ -14,24 +18,55 @@ def validateIP(ip):
             return False
     return True
 
-def snipLastOctect(ip):
+def snip_last_octect(ip):
 
+    #split octects into list
     ip_list = ip.split('.')
+    #extract then delete last octet
     fourth_octect = ip_list[3]
     del ip_list[3]
+    #join ip as str type and concat '.'
     ip_str = '.'.join(ip_list)
     ip_str = ip_str + '.'
     return fourth_octect, ip_str
 
+def verify_os_and_build_ping(ip):
+
+    #check for os type bc windows is assbackwards
+    if sys.platform == 'linux' or sys.platform == 'darwin':
+        cmd = ["ping", "-c", "3", ip]
+    elif sys.platform == 'win32':
+        cmd = ["ping", "-n", "1", ip]
+    return cmd
+
+def port_scan(ip, file_handle):
+
+    try:             
+        for port in port_list:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5) 
+            result = sock.connect_ex((ip, port))
+            if result == 0:
+                file_handle.write(f'\t{port} open\n')
+            else:
+                file_handle.write(f'\t{port} closed\n')
+            sock.close()
+    except Exception as err:
+        print(err)
+        raise
+
+#validate cli input
 if len(sys.argv) > 1 and len(sys.argv) < 4:
-        
+
     start, stop = sys.argv[1], sys.argv[2]
-    validateIP(start)
-    validateIP(stop)
-    start_host_bit, start = snipLastOctect(start)
-    stop_host_bit, stop = snipLastOctect(stop)
+    validate_ip(start)
+    validate_ip(stop)
+    start_host_bit, start = snip_last_octect(start)
+    stop_host_bit, stop = snip_last_octect(stop)
     start_host_bit = int(start_host_bit)
     stop_host_bit = int(stop_host_bit)
+
+    port_list = [21, 22, 23, 24, 80, 8080, 443, 41794, 41795, 41796, 41797]
     
     if stop_host_bit - start_host_bit >= 254:
         sys.exit('Error: keep host bit range between 2-254 or it will take all day')
@@ -43,37 +78,30 @@ else:
 def main():
 
     try:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            
-            sock.settimeout(1) 
-            file_handle = open('scan_result.txt', 'w')
+
+        with open('scan_result.txt', 'w') as file_handle:
+            tod = datetime.datetime.today()
+            file_handle.write(f'{tod}\n\n')
 
             for ip in range(start_host_bit, stop_host_bit+1):
                 
                 new_ip = start + str(ip)
-
-                ping = subprocess.Popen(['ping','-c','2',new_ip],
-                        stdout = subprocess.PIPE,
-                        stderr = subprocess.PIPE)
+                cmd = verify_os_and_build_ping(new_ip)
+                #ping host
+                ping = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 host_alive, err = ping.communicate()
                 host_alive = host_alive.decode()
 
-                print(ping.stdout, ping.stderr)
-
-                if 'Host Unreachable' in host_alive:
+                if 'host unreachable' in host_alive or 'Host Unreachable' in host_alive:
                     print(f'{new_ip}-Host unreachable')
                     file_handle.write(f'{new_ip}-Host unreachable\n')
+                    continue
                 else:
                     print(f'{new_ip}-Host alive')
                     file_handle.write(f'{new_ip}-Host alive\n')
-
-                    for port in range(41794, 41796):
-                        result = sock.connect_ex((new_ip, port))
-                        if result == 0:
-                            file_handle.write(f'\t{port} open\n')
-                        else:
-                            file_handle.write(f'\t{port} closed\n')
-        file_handle.close()
+                    
+                #scan ip for open ports specified in ports_list
+                port_scan(new_ip, file_handle)
 
     except Exception as e:
         print('Error: {}'.format(e.args()))
