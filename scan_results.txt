@@ -1,17 +1,20 @@
+2019-01-12 18:02:24.116410
+
 192.168.1.114-Host unreachable
 192.168.1.115-Host unreachable
 192.168.1.116-Host unreachable
 192.168.1.117-Host unreachable
 192.168.1.118-Host alive
-	21 open
-	22 open
-	23 open
-	24 closed
-	80 open
-	8080 closed
-	443 open
-	41794 open
-	41795 open
+	FTP - 21 - OPEN
+	SSH - 22 - OPEN
+	Telnet - 23 - OPEN
+	HTTP - 80 - OPEN
+	HTTP - 8080 - closed
+	HTTPS - 443 - OPEN
+	CIP - 41794 - OPEN
+	CTP - 41795 - OPEN
+	CIPS - 41796 - closed
+	CTPS - 41797 - closed
 192.168.1.119-Host unreachable
 192.168.1.120-Host unreachable
 192.168.1.121-Host unreachable

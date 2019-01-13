@@ -5,6 +5,10 @@ import sys
 import os
 import datetime
 
+port_list = [21, 22, 23, 80, 8080, 443, 41794, 41795, 41796, 41797]
+port_map = {21: 'FTP', 22: 'SSH', 23: 'Telnet', 80: 'HTTP', 8080: 'HTTP', 
+            443: 'HTTPS', 41794: 'CIP', 41795: 'CTP', 41796: 'CIPS', 41797: 'CTPS'}
+
 def validate_ip(ip):
 
     #split into 4 octets
@@ -13,10 +17,10 @@ def validate_ip(ip):
         sys.exit('Error: invalid ip address: {0}\nCorrect format: xxx.xxx.xxx.xxx')
     #validate range of each octet
     for i in ip_list:
-        if int(i) < 1 and int(i) > 254:
+        if int(i) < 1 or int(i) > 254:
             sys.exit('Error: invalid ip address: {0}\nValid range 2-254')
-            return False
     return True
+
 
 def snip_last_octect(ip):
 
@@ -30,14 +34,16 @@ def snip_last_octect(ip):
     ip_str = ip_str + '.'
     return fourth_octect, ip_str
 
+
 def verify_os_and_build_ping(ip):
 
     #check for os type bc windows is assbackwards
     if sys.platform == 'linux' or sys.platform == 'darwin':
         cmd = ["ping", "-c", "3", ip]
-    elif sys.platform == 'win32':
+    elif sys.platform == 'win32' and os.name == 'nt':
         cmd = ["ping", "-n", "1", ip]
     return cmd
+
 
 def port_scan(ip, file_handle):
 
@@ -47,45 +53,45 @@ def port_scan(ip, file_handle):
             sock.settimeout(0.5) 
             result = sock.connect_ex((ip, port))
             if result == 0:
-                file_handle.write(f'\t{port} open\n')
+                file_handle.write(f'\t{port_map[port]} - {port} - OPEN\n')
             else:
-                file_handle.write(f'\t{port} closed\n')
+                file_handle.write(f'\t{port_map[port]} - {port} - closed\n')
             sock.close()
     except Exception as err:
         print(err)
         raise
 
-#validate cli input
-if len(sys.argv) > 1 and len(sys.argv) < 4:
-
-    start, stop = sys.argv[1], sys.argv[2]
-    validate_ip(start)
-    validate_ip(stop)
-    start_host_bit, start = snip_last_octect(start)
-    stop_host_bit, stop = snip_last_octect(stop)
-    start_host_bit = int(start_host_bit)
-    stop_host_bit = int(stop_host_bit)
-
-    port_list = [21, 22, 23, 24, 80, 8080, 443, 41794, 41795, 41796, 41797]
-    
-    if stop_host_bit - start_host_bit >= 254:
-        sys.exit('Error: keep host bit range between 2-254 or it will take all day')
-    if start_host_bit >= stop_host_bit:
-        sys.exit('Error: invalid ip range, make sure first argument is less than the second')
-else:
-    sys.exit('Error: invalid number of arguments\nCorrect format [script] ip1 ip2')
 
 def main():
 
-    try:
+    #validate cli input
+    if len(sys.argv) > 1 and len(sys.argv) < 4:
 
+        start, stop = sys.argv[1], sys.argv[2]
+        validate_ip(start)
+        validate_ip(stop)
+        start_host_bit, start = snip_last_octect(start)
+        stop_host_bit, stop = snip_last_octect(stop)
+        start_host_bit = int(start_host_bit)
+        stop_host_bit = int(stop_host_bit)
+       
+        if stop_host_bit - start_host_bit >= 254:
+            sys.exit('Error: keep host bit range between 2-254 or it will take all day')
+        if start_host_bit >= stop_host_bit:
+            sys.exit('Error: invalid ip range, make sure first argument is less than the second')
+    else:
+        sys.exit('Error: invalid number of arguments\nCorrect format [script] ip1 ip2')
+        
+    try:
         with open('scan_result.txt', 'w') as file_handle:
+
             tod = datetime.datetime.today()
             file_handle.write(f'{tod}\n\n')
 
             for ip in range(start_host_bit, stop_host_bit+1):
                 
                 new_ip = start + str(ip)
+                #check os type, ping works different on windows vs linux
                 cmd = verify_os_and_build_ping(new_ip)
                 #ping host
                 ping = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -99,7 +105,7 @@ def main():
                 else:
                     print(f'{new_ip}-Host alive')
                     file_handle.write(f'{new_ip}-Host alive\n')
-                    
+
                 #scan ip for open ports specified in ports_list
                 port_scan(new_ip, file_handle)
 
