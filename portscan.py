@@ -14,11 +14,11 @@ def validate_ip(ip):
     #split into 4 octets
     ip_list = ip.split('.')
     if len(ip_list) != 4:
-        sys.exit('Error: invalid ip address: {0}\nCorrect format: xxx.xxx.xxx.xxx')
+        sys.exit(f'Error: invalid ip address: {ip}\nCorrect format: xxx.xxx.xxx.xxx')
     #validate range of each octet
     for i in ip_list:
-        if int(i) < 1 or int(i) > 254:
-            sys.exit('Error: invalid ip address: {0}\nValid range 2-254')
+        if int(i) < 0 or int(i) > 254:
+            sys.exit(f'Error: invalid ip address: {ip}\nValid range 2-254')
     return True
 
 
@@ -47,6 +47,7 @@ def verify_os_and_build_ping(ip):
 
 def port_scan(ip, file_handle):
 
+    global port_list, port_map
     try:             
         for port in port_list:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -81,7 +82,7 @@ def main():
             sys.exit('Error: invalid ip range, make sure first argument is less than the second')
     else:
         sys.exit('Error: invalid number of arguments\nCorrect format [script] ip1 ip2')
-        
+
     try:
         with open('scan_result.txt', 'w') as file_handle:
 
