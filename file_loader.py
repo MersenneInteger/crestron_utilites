@@ -31,7 +31,6 @@ def check_if_files_exist(file_names):
         if not os.path.exists(file):
             #return f'path specified for {file} does not exist'
             nonexistent_files.append(file)
-    #return None
     return nonexistent_files
 
 
@@ -71,11 +70,6 @@ if __name__=='__main__':
     file_paths = list(map(get_full_path, file_names))
     #check if files exist
     file_check = check_if_files_exist(file_paths)
-    #if file_check is not None:
-    #    print(f'{file_check}\nexiting...')
-    #    logging.error(f'{file_check}\nexiting...\n{"*"*100}')
-        #exit if file does not exist
-    #    sys.exit()
 
     if file_check != []:
         remove_non_existent_files(file_check, file_names, file_paths, logging)
