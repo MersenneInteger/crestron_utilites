@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
 import socket
 import subprocess
 import sys
 import os
-import datetime
+from datetime import datetime
+import argparse
 
 port_list = [21, 22, 23, 80, 8080, 443, 41794, 41795, 41796, 41797]
 port_map = {21: 'FTP', 22: 'SSH', 23: 'Telnet', 80: 'HTTP', 8080: 'HTTP', 
@@ -58,36 +58,39 @@ def port_scan(ip, file_handle):
             else:
                 file_handle.write(f'\t{port_map[port]} - {port} - closed\n')
             sock.close()
-    except Exception as err:
-        print(err)
+    except Exception as e:
+        print(e.args)
         raise
 
 
 def main():
 
-    #validate cli input
-    if len(sys.argv) > 1 and len(sys.argv) < 4:
+    #create command line parser object
+    parser = argparse.ArgumentParser(prog='Port Scanner',description='Scan range of ip address for open ports')
+    parser.add_argument('--start',type=str,help='start of ip range to scan',required=True)
+    parser.add_argument('--stop',type=str,help='end of ip range to scan',required=True)
+    
+    #parse command line args
+    args = parser.parse_args()
+    start = args.start
+    stop = args.stop
 
-        start, stop = sys.argv[1], sys.argv[2]
-        validate_ip(start)
-        validate_ip(stop)
-        start_host_bit, start = snip_last_octect(start)
-        stop_host_bit, stop = snip_last_octect(stop)
-        start_host_bit = int(start_host_bit)
-        stop_host_bit = int(stop_host_bit)
-       
-        if stop_host_bit - start_host_bit >= 254:
-            sys.exit('Error: keep host bit range between 2-254 or it will take all day')
-        if start_host_bit >= stop_host_bit:
-            sys.exit('Error: invalid ip range, make sure first argument is less than the second')
-    else:
-        sys.exit('Error: invalid number of arguments\nCorrect format [script] ip1 ip2')
+    validate_ip(start)
+    validate_ip(stop)
+    start_host_bit, start = snip_last_octect(start)
+    stop_host_bit, stop = snip_last_octect(stop)
+    start_host_bit = int(start_host_bit)
+    stop_host_bit = int(stop_host_bit)
+    
+    if stop_host_bit - start_host_bit >= 254:
+        sys.exit('Error: keep host bit range between 2-254 or it will take all day')
+    if start_host_bit >= stop_host_bit:
+        sys.exit('Error: invalid ip range, make sure first argument is less than the second')
 
     try:
         with open('scan_result.txt', 'w') as file_handle:
 
-            tod = datetime.datetime.today()
-            file_handle.write(f'{tod}\n\n')
+            file_handle.write(f'{datetime.now()}\n\n')
 
             for ip in range(start_host_bit, stop_host_bit+1):
                 
@@ -97,6 +100,7 @@ def main():
                 #ping host
                 ping = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 host_alive, err = ping.communicate()
+                print(err)
                 host_alive = host_alive.decode()
 
                 if 'host unreachable' in host_alive or 'Host Unreachable' in host_alive:
@@ -111,7 +115,7 @@ def main():
                 port_scan(new_ip, file_handle)
 
     except Exception as e:
-        print('Error: {}'.format(e.args()))
+        print(f'Error: {e.args}')
 
 if __name__ == '__main__':
     main()
