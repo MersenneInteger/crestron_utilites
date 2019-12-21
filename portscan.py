@@ -52,6 +52,16 @@ def snip_last_octect(ip):
     return fourth_octect, ip_str
 
 
+def validate_host_bits(start_host_bit, stop_host_bit):
+
+    if stop_host_bit - start_host_bit >= 254:
+        log('Error: keep host bit range between 2-254 or it will take all day','error')
+        sys.exit('Error: keep host bit range between 2-254 or it will take all day')
+    if start_host_bit >= stop_host_bit:
+        log('Error: invalid ip range, make sure first argument is less than the second', 'error')
+        sys.exit('Error: invalid ip range, make sure first argument is less than the second')
+
+
 def verify_os_and_build_ping(ip):
 
     #check for os type bc windows is assbackwards
@@ -92,19 +102,14 @@ def main():
     start = args.start
     stop = args.stop
 
+    #validate ip addr
     validate_ip(start)
     validate_ip(stop)
     start_host_bit, start = snip_last_octect(start)
     stop_host_bit, stop = snip_last_octect(stop)
     start_host_bit = int(start_host_bit)
     stop_host_bit = int(stop_host_bit)
-
-    if stop_host_bit - start_host_bit >= 254:
-        log('Error: keep host bit range between 2-254 or it will take all day','error')
-        sys.exit('Error: keep host bit range between 2-254 or it will take all day')
-    if start_host_bit >= stop_host_bit:
-        log('Error: invalid ip range, make sure first argument is less than the second', 'error')
-        sys.exit('Error: invalid ip range, make sure first argument is less than the second')
+    validate_host_bits(start_host_bit, stop_host_bit)
 
     try:
         with open('scan_result.txt', 'w') as file_handle:
@@ -137,8 +142,8 @@ def main():
 
     except Exception as e:
         log(f'Error: {e.args}','error')
-
-    log(f'Finished\n{"*"*100}','info')
+    finally:
+        log(f'Finished\n{"*"*100}','info')
 
 
 if __name__ == '__main__':
